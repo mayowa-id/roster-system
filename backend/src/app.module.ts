@@ -9,6 +9,7 @@ import { ShiftModule } from './modules/shift/shift.module';
 import { TimeslotModule } from './modules/timeslot/timeslot.module';
 import { AssignmentModule } from './modules/assignment/assignment.module';
 import { getDatabaseConfig } from './config/database.config';
+import { SeedModule } from './database/seeds/seed.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { getDatabaseConfig } from './config/database.config';
     ShiftModule,
     TimeslotModule,
     AssignmentModule,
+    SeedModule
   ],
 })
 export class AppModule {}

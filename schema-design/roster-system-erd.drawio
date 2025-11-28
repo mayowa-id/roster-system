@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Roster ERD">
+    <mxGraphModel dx="1404" dy="763" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- USER -->
+        <mxCell id="user" value="<div style=&quot;text-align:center;&quot;><b>USER</b></div><hr/>🔑 id: UUID (PK)<br/>email: VARCHAR (UNIQUE)<br/>firstName: VARCHAR<br/>lastName: VARCHAR<br/>role: ENUM (ADMIN/USER)<br/>createdAt: TIMESTAMP<br/>updatedAt: TIMESTAMP" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#a8d0ff;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="260" height="220" as="geometry"/>
+        </mxCell>
+
+        <!-- TIMESLOT -->
+        <mxCell id="timeslot" value="<div style=&quot;text-align:center;&quot;><b>TIMESLOT</b></div><hr/>🔑 id: UUID (PK)<br/>name: VARCHAR<br/>startTime: TIME<br/>endTime: TIME<br/>createdAt: TIMESTAMP<br/>updatedAt: TIMESTAMP" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#b8ffd0;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="370" y="40" width="260" height="200" as="geometry"/>
+        </mxCell>
+
+        <!-- SHIFT -->
+        <mxCell id="shift" value="<div style=&quot;text-align:center;&quot;><b>SHIFT</b></div><hr/>🔑 id: UUID (PK)<br/>date: DATE<br/>🔗 timeslotId: UUID (FK)<br/>status: ENUM<br/>requiredStaff: INTEGER<br/>createdAt: TIMESTAMP<br/>updatedAt: TIMESTAMP" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#ffd0a8;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="370" y="280" width="260" height="220" as="geometry"/>
+        </mxCell>
+
+        <!-- ASSIGNMENT -->
+        <mxCell id="assignment" value="<div style=&quot;text-align:center;&quot;><b>ASSIGNMENT</b></div><hr/>🔑 id: UUID (PK)<br/>🔗 shiftId: UUID (FK)<br/>🔗 userId: UUID (FK)<br/>status: ENUM<br/>unavailableReason: TEXT<br/>markedUnavailableAt: TIMESTAMP<br/>createdAt: TIMESTAMP<br/>updatedAt: TIMESTAMP<br/><i>UNIQUE(shiftId, userId)</i>" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#d0b8ff;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="740" y="160" width="300" height="280" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges: styles use crow's-foot at target -->
+        <!-- USER -> ASSIGNMENT -->
+        <mxCell id="e1" value="has many" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=crow;endSize=12;fontSize=12;strokeColor=#000000;html=1;labelBackgroundColor=none" edge="1" parent="1" source="user" target="assignment">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- TIMESLOT -> SHIFT -->
+        <mxCell id="e2" value="has many" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=crow;endSize=12;fontSize=12;strokeColor=#000000;html=1" edge="1" parent="1" source="timeslot" target="shift">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- SHIFT -> ASSIGNMENT -->
+        <mxCell id="e3" value="has many" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=crow;endSize=12;fontSize=12;strokeColor=#000000;html=1" edge="1" parent="1" source="shift" target="assignment">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
