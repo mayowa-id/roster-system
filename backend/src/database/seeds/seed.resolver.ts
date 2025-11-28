@@ -18,11 +18,11 @@ export class SeedResolver {
     const assignmentRepo = this.dataSource.getRepository(Assignment);
 
     try {
-      // Clear existing data
-      await assignmentRepo.delete({});
-      await shiftRepo.delete({});
-      await timeslotRepo.delete({});
-      await userRepo.delete({});
+      // Clear existing data using query builder (safer for empty tables)
+      await assignmentRepo.createQueryBuilder().delete().execute();
+      await shiftRepo.createQueryBuilder().delete().execute();
+      await timeslotRepo.createQueryBuilder().delete().execute();
+      await userRepo.createQueryBuilder().delete().execute();
 
       // Create Users
       const users = await userRepo.save([
@@ -111,7 +111,7 @@ export class SeedResolver {
         const dateString = shiftDate.toISOString().split('T')[0];
 
         const shiftsPerDay = Math.floor(Math.random() * 2) + 2;
-        const selectedTimeslots = timeslots
+        const selectedTimeslots = [...timeslots]
           .sort(() => Math.random() - 0.5)
           .slice(0, shiftsPerDay);
 
@@ -127,6 +127,7 @@ export class SeedResolver {
       }
 
       // Create Assignments
+      const assignments: Assignment[] = [];
       const regularUsers = users.filter((u) => u.role === UserRole.USER);
       const shiftsToAssign = shifts.slice(0, Math.floor(shifts.length * 0.6));
 
@@ -141,11 +142,12 @@ export class SeedResolver {
         for (let i = 0; i < assignedCount; i++) {
           const user = availableUsers[i];
           if (user) {
-            await assignmentRepo.save({
+            const assignment = await assignmentRepo.save({
               shiftId: shift.id,
               userId: user.id,
               status: AssignmentStatus.ASSIGNED,
             });
+            assignments.push(assignment);
           }
         }
 
@@ -155,7 +157,7 @@ export class SeedResolver {
         }
       }
 
-      return ` Database seeded successfully! Created ${users.length} users, ${timeslots.length} timeslots, ${shifts.length} shifts, and assignments.`;
+      return `Database seeded successfully! Created ${users.length} users, ${timeslots.length} timeslots, ${shifts.length} shifts, and ${assignments.length} assignments.`;
     } catch (error) {
       return `Error seeding database: ${error.message}`;
     }
