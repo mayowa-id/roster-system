@@ -126,10 +126,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const shifts: Shift[] = shiftsData?.shifts || [];
-  const users: User[] = usersData?.users || [];
-  const timeslots: Timeslot[] = timeslotsData?.timeslots || [];
-  const openShifts: Shift[] = openShiftsData?.openShifts || [];
+  const shifts: Shift[] = (shiftsData as any)?.shifts || [];
+  const users: User[] = (usersData as any)?.users || [];
+  const timeslots: Timeslot[] = (timeslotsData as any)?.timeslots || [];
+  const openShifts: Shift[] = (openShiftsData as any)?.openShifts || [];
+;
 
   return (
     <>

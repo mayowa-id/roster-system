@@ -90,9 +90,9 @@ export default function UserDashboard() {
     });
   };
 
-  const users: User[] = usersData?.users || [];
-  const assignments: Assignment[] = assignmentsData?.myAssignments || [];
-  const openShifts: Shift[] = openShiftsData?.openShifts || [];
+  const users: User[] = (usersData as any)?.users || [];
+  const assignments: Assignment[] = (assignmentsData as any)?.myAssignments || [];
+  const openShifts: Shift[] = (openShiftsData as any)?.openShifts || [];
 
   // Filter open shifts by selected date if in day view
   const filteredOpenShifts = viewMode === 'day' 
