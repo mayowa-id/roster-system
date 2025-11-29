@@ -12,6 +12,7 @@ export class SeedResolver {
 
   @Mutation(() => String, { description: 'Seed the database with initial data' })
   async seedDatabase(): Promise<string> {
+    
     const userRepo = this.dataSource.getRepository(User);
     const timeslotRepo = this.dataSource.getRepository(Timeslot);
     const shiftRepo = this.dataSource.getRepository(Shift);

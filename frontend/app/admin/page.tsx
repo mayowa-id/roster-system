@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client/react';
 import Header from '@/components/Header';
 import { GET_SHIFTS, GET_USERS, GET_TIMESLOTS, GET_OPEN_SHIFTS } from '@/graphql/queries';
 import { ASSIGN_USER_TO_SHIFT, CREATE_SHIFT, REPEAT_SHIFT, REMOVE_ASSIGNMENT } from '@/graphql/mutations';
