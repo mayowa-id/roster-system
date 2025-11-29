@@ -3,14 +3,21 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import Header from '@/components/Header';
+import ShiftFilters from '@/components/ShiftFilters';
 import { GET_SHIFTS, GET_USERS, GET_TIMESLOTS, GET_OPEN_SHIFTS } from '@/graphql/queries';
 import { ASSIGN_USER_TO_SHIFT, CREATE_SHIFT, REPEAT_SHIFT, REMOVE_ASSIGNMENT } from '@/graphql/mutations';
 import StatusBadge from '@/components/StatusBadge';
 import { format } from 'date-fns';
-import { Shift, User, Timeslot } from '@/types';
+import { Shift, User, Timeslot, ShiftStatus } from '@/types';
 
 export default function AdminDashboard() {
+  // Filter states
+  const [showFilters, setShowFilters] = useState(false); 
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<ShiftStatus | ''>('');
+  const [selectedTimeslot, setSelectedTimeslot] = useState('');
+
+  // Modal states
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [showCreateShift, setShowCreateShift] = useState(false);
   const [showRepeatShift, setShowRepeatShift] = useState(false);
@@ -23,16 +30,22 @@ export default function AdminDashboard() {
   const [repeatTimeslot, setRepeatTimeslot] = useState('');
   const [repeatDates, setRepeatDates] = useState('');
 
+  // Build filter object for GraphQL
+  const filterVariables: any = {};
+  if (selectedDate) filterVariables.date = selectedDate;
+  if (selectedStatus) filterVariables.status = selectedStatus;
+  if (selectedTimeslot) filterVariables.timeslotId = selectedTimeslot;
+
   // Queries
   const { data: shiftsData, loading: shiftsLoading, refetch: refetchShifts } = useQuery(GET_SHIFTS, {
-    variables: selectedDate ? { filter: { date: selectedDate } } : {},
+    variables: Object.keys(filterVariables).length > 0 ? { filter: filterVariables } : {},
   });
 
   const { data: usersData } = useQuery(GET_USERS);
   const { data: timeslotsData } = useQuery(GET_TIMESLOTS);
   const { data: openShiftsData } = useQuery(GET_OPEN_SHIFTS);
 
-  // Mutations
+  // Mutations (keep existing mutations)
   const [assignUser] = useMutation(ASSIGN_USER_TO_SHIFT, {
     onCompleted: () => {
       refetchShifts();
@@ -74,10 +87,10 @@ export default function AdminDashboard() {
     onError: (error) => alert(`Error: ${error.message}`),
   });
 
+  // Handler functions (keep existing handlers)
   const handleAssignUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShift || !assignUserId) return;
-
     assignUser({
       variables: {
         input: {
@@ -91,7 +104,6 @@ export default function AdminDashboard() {
   const handleCreateShift = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newShiftDate || !newShiftTimeslot) return;
-
     createShift({
       variables: {
         input: {
@@ -106,9 +118,7 @@ export default function AdminDashboard() {
   const handleRepeatShift = (e: React.FormEvent) => {
     e.preventDefault();
     if (!repeatTimeslot || !repeatDates) return;
-
     const datesArray = repeatDates.split(',').map(d => d.trim());
-
     repeatShift({
       variables: {
         input: {
@@ -130,7 +140,14 @@ export default function AdminDashboard() {
   const users: User[] = (usersData as any)?.users || [];
   const timeslots: Timeslot[] = (timeslotsData as any)?.timeslots || [];
   const openShifts: Shift[] = (openShiftsData as any)?.openShifts || [];
-;
+
+  // Count shifts by status for stats
+  const statsData = {
+    total: shifts.length,
+    open: shifts.filter(s => s.status === 'OPEN').length,
+    assigned: shifts.filter(s => s.status === 'ASSIGNED').length,
+    cancelled: shifts.filter(s => s.status === 'CANCELLED').length,
+  };
 
   return (
     <>
@@ -146,93 +163,60 @@ export default function AdminDashboard() {
             </p>
           </div>
 
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Shifts</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{statsData.total}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Open</p>
+              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{statsData.open}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-green-200 dark:border-green-800">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Assigned</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">{statsData.assigned}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-red-200 dark:border-red-800">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Cancelled</p>
+              <p className="text-3xl font-bold text-red-600 dark:text-red-400">{statsData.cancelled}</p>
+            </div>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-4 mb-8">
             <button
               onClick={() => setShowCreateShift(true)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
             >
-              Create Shift
+              + Create Shift
             </button>
             <button
               onClick={() => setShowRepeatShift(true)}
               className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
             >
-              Repeat Shift
+              🔄 Repeat Shift
             </button>
             <button
               onClick={() => refetchShifts()}
               className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium"
             >
-              Refresh
+              ↻ Refresh
             </button>
           </div>
 
-          {/* Date Filter */}
-          <div className="mb-8">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Filter by Date
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-            />
-            {selectedDate && (
-              <button
-                onClick={() => setSelectedDate('')}
-                className="ml-2 text-sm text-blue-600 hover:underline"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Open Shifts Section */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Open Shifts ({openShifts.length})
-            </h2>
-            <div className="grid gap-4">
-              {openShifts.map((shift) => (
-                <div
-                  key={shift.id}
-                  className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {shift.timeslot.name}
-                        </h3>
-                        <StatusBadge status={shift.status} />
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        📅 {format(new Date(shift.date), 'EEEE, MMM dd, yyyy')}
-                      </p>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        ⏰ {shift.timeslot.startTime} - {shift.timeslot.endTime}
-                      </p>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        👥 Required: {shift.requiredStaff}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedShift(shift.id);
-                        setShowAssignForm(true);
-                      }}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                    >
-                      Assign User
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          {/* Filters */}
+<ShiftFilters
+  selectedDate={selectedDate}
+  setSelectedDate={setSelectedDate}
+  selectedStatus={selectedStatus}
+  setSelectedStatus={setSelectedStatus}
+  selectedTimeslot={selectedTimeslot}
+  setSelectedTimeslot={setSelectedTimeslot}
+  timeslots={timeslots}
+  isOpen={showFilters}
+  onToggle={() => setShowFilters(!showFilters)}
+/>
           {/* All Shifts Section */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -240,15 +224,29 @@ export default function AdminDashboard() {
             </h2>
 
             {shiftsLoading ? (
-              <p className="text-gray-600 dark:text-gray-400">Loading shifts...</p>
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
             ) : shifts.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No shifts found.</p>
+              <div className="bg-white dark:bg-gray-900 p-12 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
+                <p className="text-gray-600 dark:text-gray-400 text-lg">No shifts found with current filters.</p>
+                <button
+                  onClick={() => {
+                    setSelectedDate('');
+                    setSelectedStatus('');
+                    setSelectedTimeslot('');
+                  }}
+                  className="mt-4 text-blue-600 hover:underline"
+                >
+                  Clear filters
+                </button>
+              </div>
             ) : (
               <div className="grid gap-4">
                 {shifts.map((shift) => (
                   <div
                     key={shift.id}
-                    className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800"
+                    className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition"
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
@@ -263,6 +261,9 @@ export default function AdminDashboard() {
                         </p>
                         <p className="text-gray-600 dark:text-gray-400">
                           ⏰ {shift.timeslot.startTime} - {shift.timeslot.endTime}
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          👥 Required: {shift.requiredStaff} | Assigned: {shift.assignments?.length || 0}
                         </p>
                       </div>
                       {shift.status === 'OPEN' && (
@@ -314,9 +315,9 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Assign User Modal */}
+        {/* Modals - Keep all existing modals (Assign, Create, Repeat) */}
         {showAssignForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 Assign User to Shift
@@ -364,9 +365,8 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Create Shift Modal */}
         {showCreateShift && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 Create New Shift
@@ -426,9 +426,8 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Repeat Shift Modal */}
         {showRepeatShift && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 Repeat Shift for Multiple Dates

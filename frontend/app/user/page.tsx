@@ -3,16 +3,25 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import Header from '@/components/Header';
-import { GET_MY_ASSIGNMENTS, GET_OPEN_SHIFTS, GET_USERS } from '@/graphql/queries';
+import ShiftFilters from '@/components/ShiftFilters';
+import { GET_MY_ASSIGNMENTS, GET_OPEN_SHIFTS, GET_USERS, GET_TIMESLOTS } from '@/graphql/queries';
 import { PICK_UP_SHIFT, MARK_UNAVAILABLE } from '@/graphql/mutations';
 import StatusBadge from '@/components/StatusBadge';
 import { format, addDays, startOfWeek } from 'date-fns';
-import { Assignment, Shift, User } from '@/types';
+import { Assignment, Shift, User, Timeslot, ShiftStatus, AssignmentStatus } from '@/types';
 
 export default function UserDashboard() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [viewMode, setViewMode] = useState<'day' | 'week'>('week');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Filter states
+  const [filterDate, setFilterDate] = useState('');
+  const [filterStatus, setFilterStatus] = useState<ShiftStatus | ''>('');
+  const [filterTimeslot, setFilterTimeslot] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Modal states
   const [showUnavailableForm, setShowUnavailableForm] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<string | null>(null);
   const [unavailableReason, setUnavailableReason] = useState('');
@@ -23,6 +32,7 @@ export default function UserDashboard() {
 
   // Queries
   const { data: usersData } = useQuery(GET_USERS);
+  const { data: timeslotsData } = useQuery(GET_TIMESLOTS);
   
   const { data: assignmentsData, loading: assignmentsLoading, refetch: refetchAssignments } = useQuery(
     GET_MY_ASSIGNMENTS,
@@ -91,13 +101,33 @@ export default function UserDashboard() {
   };
 
   const users: User[] = (usersData as any)?.users || [];
+  const timeslots: Timeslot[] = (timeslotsData as any)?.timeslots || [];
   const assignments: Assignment[] = (assignmentsData as any)?.myAssignments || [];
   const openShifts: Shift[] = (openShiftsData as any)?.openShifts || [];
 
-  // Filter open shifts by selected date if in day view
-  const filteredOpenShifts = viewMode === 'day' 
-    ? openShifts.filter(shift => shift.date === selectedDate)
-    : openShifts;
+  // Apply filters to assignments
+  const filteredAssignments = assignments.filter(assignment => {
+    if (filterDate && assignment.shift.date !== filterDate) return false;
+    if (filterStatus && assignment.shift.status !== filterStatus) return false;
+    if (filterTimeslot && assignment.shift.timeslot.id !== filterTimeslot) return false;
+    return true;
+  });
+
+  // Apply filters to open shifts
+  const filteredOpenShifts = openShifts.filter(shift => {
+    if (viewMode === 'day' && shift.date !== selectedDate) return false;
+    if (filterDate && shift.date !== filterDate) return false;
+    if (filterStatus && shift.status !== filterStatus) return false;
+    if (filterTimeslot && shift.timeslot.id !== filterTimeslot) return false;
+    return true;
+  });
+
+  // Stats
+  const stats = {
+    total: assignments.length,
+    assigned: assignments.filter(a => a.status === 'ASSIGNED').length,
+    unavailable: assignments.filter(a => a.status === 'UNAVAILABLE').length,
+  };
 
   return (
     <>
@@ -134,6 +164,22 @@ export default function UserDashboard() {
 
           {selectedUserId && (
             <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Shifts</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+                </div>
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Assigned</p>
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.assigned}</p>
+                </div>
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-red-200 dark:border-red-800">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Unavailable</p>
+                  <p className="text-3xl font-bold text-red-600 dark:text-red-400">{stats.unavailable}</p>
+                </div>
+              </div>
+
               {/* View Mode Toggle */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex gap-2">
@@ -167,6 +213,19 @@ export default function UserDashboard() {
                 />
               </div>
 
+              {/* Filters */}
+              <ShiftFilters
+                selectedDate={filterDate}
+                setSelectedDate={setFilterDate}
+                selectedStatus={filterStatus}
+                setSelectedStatus={setFilterStatus}
+                selectedTimeslot={filterTimeslot}
+                setSelectedTimeslot={setFilterTimeslot}
+                timeslots={timeslots}
+                isOpen={showFilters}
+                onToggle={() => setShowFilters(!showFilters)}
+              />
+
               {/* My Assignments Section */}
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -174,14 +233,18 @@ export default function UserDashboard() {
                 </h2>
 
                 {assignmentsLoading ? (
-                  <p className="text-gray-600 dark:text-gray-400">Loading assignments...</p>
-                ) : assignments.length === 0 ? (
+                  <div className="flex justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : filteredAssignments.length === 0 ? (
                   <div className="bg-white dark:bg-gray-900 p-8 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
-                    <p className="text-gray-600 dark:text-gray-400">No shifts assigned yet.</p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {assignments.length === 0 ? 'No shifts assigned yet.' : 'No shifts match your filters.'}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid gap-4">
-                    {assignments.map((assignment) => (
+                    {filteredAssignments.map((assignment) => (
                       <div
                         key={assignment.id}
                         className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800"
@@ -234,7 +297,9 @@ export default function UserDashboard() {
 
                 {filteredOpenShifts.length === 0 ? (
                   <div className="bg-white dark:bg-gray-900 p-8 rounded-lg border border-gray-200 dark:border-gray-800 text-center">
-                    <p className="text-gray-600 dark:text-gray-400">No open shifts available.</p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {openShifts.length === 0 ? 'No open shifts available.' : 'No open shifts match your filters.'}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid gap-4">
