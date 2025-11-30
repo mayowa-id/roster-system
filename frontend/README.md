@@ -1,36 +1,178 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Roster System Frontend
 
-## Getting Started
+Next.js application for shift scheduling and roster management.
 
-First, run the development server:
+## Technology Stack
 
+- Next.js 14 (App Router)
+- TailwindCSS
+- Apollo Client
+- TypeScript
+- date-fns
+
+## Prerequisites
+
+- Node.js v18+
+
+## Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `.env.local` file:
+```env
+NEXT_PUBLIC_GRAPHQL_URL=http://localhost:4000/graphql
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For production, use your Render backend URL.
 
-## Learn More
+## Running the Application
+```bash
+# Development
+npm run dev
 
-To learn more about Next.js, take a look at the following resources:
+# Production
+npm run build
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Application runs at: http://localhost:3000
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Features
 
-## Deploy on Vercel
+### Home Page
+- Landing page with navigation
+- Links to Admin and User dashboards
+- Dark mode toggle
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Admin Dashboard
+- View all shifts
+- Filter by date, status, timeslot
+- Create new shifts
+- Repeat shifts for multiple dates
+- Assign users to shifts
+- Remove assignments
+- Statistics cards
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### User Dashboard
+- Select user (simulating logged-in user)
+- View assigned shifts
+- Day/Week view toggle
+- Filter personal shifts
+- View open shifts
+- Pick up open shifts
+- Mark shifts as unavailable with reason
+- Statistics cards
+
+## Project Structure
+```
+frontend/
+├── app/
+│   ├── admin/
+│   │   └── page.tsx
+│   ├── user/
+│   │   └── page.tsx
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── globals.css
+├── components/
+│   ├── Header.tsx
+│   ├── StatusBadge.tsx
+│   └── ShiftFilters.tsx
+├── graphql/
+│   ├── queries.ts
+│   └── mutations.ts
+├── lib/
+│   ├── apollo-client.ts
+│   └── apollo-wrapper.tsx
+├── types/
+│   └── index.ts
+└── package.json
+```
+
+## GraphQL Integration
+
+### Queries
+- GET_USERS
+- GET_TIMESLOTS
+- GET_SHIFTS
+- GET_OPEN_SHIFTS
+- GET_MY_ASSIGNMENTS
+
+### Mutations
+- ASSIGN_USER_TO_SHIFT
+- CREATE_SHIFT
+- REPEAT_SHIFT
+- PICK_UP_SHIFT
+- MARK_UNAVAILABLE
+- REMOVE_ASSIGNMENT
+
+## Components
+
+### Header
+Navigation bar with links to Home, Admin, and User dashboards.
+
+### StatusBadge
+Displays shift/assignment status with color coding:
+- OPEN (yellow)
+- ASSIGNED (green)
+- UNAVAILABLE (red)
+- CANCELLED (red)
+
+### ShiftFilters
+Collapsible filter component with:
+- Date filter
+- Status filter
+- Timeslot filter
+- Active filter badges
+
+## Styling
+
+Uses TailwindCSS with:
+- Dark mode support
+- Responsive design (mobile-first)
+- Custom color scheme
+- Smooth transitions
+
+## Deployment (Vercel)
+
+1. Push code to GitHub
+2. Import project in Vercel
+3. Configure:
+   - Root Directory: `frontend`
+   - Framework: Next.js
+4. Add environment variable:
+   - `NEXT_PUBLIC_GRAPHQL_URL`: Your backend URL
+5. Deploy
+
+## Scripts
+```bash
+npm run dev       # Start development server
+npm run build     # Build for production
+npm run start     # Start production server
+npm run lint      # Run ESLint
+```
+
+## Usage
+
+### Admin Workflow
+1. Navigate to Admin Dashboard
+2. Use filters to find shifts
+3. Click "Create Shift" to add new shifts
+4. Click "Repeat Shift" for multiple dates
+5. Click "Assign User" on open shifts
+6. Remove assignments as needed
+
+### User Workflow
+1. Navigate to User Dashboard
+2. Select a user from dropdown
+3. View assigned shifts in day or week view
+4. Use filters to narrow down shifts
+5. Pick up open shifts
+6. Mark shifts as unavailable with reason
+
+## Dark Mode
+
+Toggle dark mode using the button in the header. Preference is saved in localStorage.
