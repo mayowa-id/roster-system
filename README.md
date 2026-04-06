@@ -22,7 +22,7 @@ roster-system/
 ## Technology Stack
 
 ### Backend
-- NestJS 10
+- NestJS 10+
 - GraphQL (Code-First with Apollo Server)
 - TypeORM
 - PostgreSQL
