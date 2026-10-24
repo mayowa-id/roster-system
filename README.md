@@ -1,6 +1,6 @@
 The web application is live on 
 
-# Roster System - Full Stack Application
+# Roster System - Application
 
 A comprehensive shift scheduling and roster management system built with NestJS, GraphQL, TypeORM, PostgreSQL, Next.js, and TailwindCSS.
 
